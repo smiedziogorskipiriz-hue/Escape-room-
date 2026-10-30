@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crucigrama histórico - Los pueblos de América</title>
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Google Fonts: Cinzel Decorative, Cinzel & Cormorant Garamond -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Cinzel:wght@500;700;900&family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+
+    <!-- FontAwesome CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Canvas Confetti CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        stone: {
+                            850: '#141210',
+                            900: '#1a1815',
+                            950: '#0d0c0b',
+                        },
+                        gold: {
+                            100: '#fef3c7',
+                            300: '#fcd34d',
+                            400: '#e5c158',
+                            500: '#d4af37',
+                            600: '#b8860b',
+                            700: '#926a08',
+                        },
+                        bronze: {
+                            300: '#dfb48c',
+                            500: '#8c6239',
+                            700: '#5c3a1e'
+                        }
+                    },
+                    fontFamily: {
+                        cinzel: ['Cinzel', 'serif'],
+                        'cinzel-dec': ['Cinzel Decorative', 'serif'],
+                        garamond: ['Cormorant Garamond', 'serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Estilos generales inspirados en piedra tallada y oro */
+        body {
+            background-color: #0d0c0b;
+            background-image: 
+                radial-gradient(circle at 50% 20%, rgba(212, 175, 55, 0.07) 0%, transparent 60%),
+                radial-gradient(circle at 80% 80%, rgba(140, 98, 57, 0.05) 0%, transparent 50%),
+                linear-gradient(to bottom, #141210, #0d0c0b);
+            color: #e2d9cd;
+            font-family: 'Cormorant Garamond', serif;
+            min-height: 100vh;
+        }
+
+        /* Texturas y bordes dorados estilo relieve */
+        .gold-border {
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.8), 0 4px 20px rgba(0, 0, 0, 0.6);
+        }
+
+        .gold-gradient-text {
+            background: linear-gradient(135deg, #fff2be 0%, #d4af37 50%, #aa7c11 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .gold-line {
+            height: 1px;
+            background: linear-gradient(90deg, transparent 0%, rgba(212, 175, 55, 0.6) 50%, transparent 100%);
+        }
+
+        /* Cuadrícula del crucigrama */
+        .crossword-cell {
+            position: relative;
+            aspect-ratio: 1;
+            background-color: #1a1816;
+            border: 1px solid rgba(212, 175, 55, 0.25);
+            transition: all 0.2s ease;
+        }
+
+        .crossword-cell.empty {
+            background-color: #0d0c0b;
+            border-color: transparent;
+        }
+
+        .crossword-cell.active-word {
+            background-color: #2a2215;
+            border-color: rgba(212, 175, 55, 0.6);
+        }
+
+        .crossword-cell.selected {
+            background-color: #3d3016 !important;
+            border: 2px solid #fcd34d !important;
+            box-shadow: 0 0 10px rgba(252, 211, 77, 0.4);
+            z-index: 10;
+        }
+
+        .crossword-cell.correct {
+            background-color: #192e1d !important;
+            border-color: #4ade80 !important;
+            color: #86efac;
+        }
+
+        .crossword-cell.incorrect {
+            background-color: #3b1818 !important;
+            border-color: #f87171 !important;
+            color: #fca5a5;
+        }
+
+        .cell-number {
+            position: absolute;
+            top: 2px;
+            left: 3px;
+            font-size: 0.65rem;
+            font-family: 'Cinzel', serif;
+            font-weight: 700;
+            color: #d4af37;
+            pointer-events: none;
+            line-height: 1;
+        }
+
+        .cell-input {
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            text-align: center;
+            font-family: 'Cinzel', serif;
+            font-weight: 700;
+            font-size: 1.15rem;
+            color: #fef3c7;
+            text-transform: uppercase;
+            outline: none;
+            caret-color: transparent;
+            cursor: pointer;
+        }
+
+        @media (min-width: 768px) {
+            .cell-input {
+                font-size: 1.35rem;
+            }
+        }
+
+        /* Lista de pistas */
+        .clue-item {
+            transition: all 0.2s ease;
+            border-left: 3px solid transparent;
+        }
+
+        .clue-item:hover {
+            background-color: rgba(212, 175, 55, 0.05);
+        }
+
+        .clue-item.active {
+            background-color: rgba(212, 175, 55, 0.12);
+            border-left-color: #d4af37;
+        }
+
+        .clue-item.completed {
+            opacity: 0.6;
+            text-decoration: line-through;
+            text-decoration-color: #d4af37;
+        }
+
+        /* Scrollbar personalizada */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #141210;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #3a3225;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #d4af37;
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen justify-between p-3 sm:p-6 md:p-8">
+
+    <!-- Contenedor Principal -->
+    <div class="max-w-6xl mx-auto w-full">
+        
+        <!-- ENCABEZADO Y CONSIGNA (Inspirado fielmente en el estilo de la imagen) -->
+        <header class="mb-6 md:mb-8 border-b border-gold-500/30 pb-6">
+            <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-4">
+                <div>
+                    <span class="text-xs sm:text-sm uppercase tracking-[0.3em] text-gold-400 font-cinzel font-bold">
+                        HISTORIA DE AMÉRICA PRECOLOMBINA
+                    </span>
+                    <h1 class="text-3xl sm:text-4xl md:text-5xl font-black font-cinzel gold-gradient-text tracking-wide mt-1">
+                        CRUCIGRAMA HISTÓRICO
+                    </h1>
+                </div>
+
+                <!-- Botón de audio opcional / estado -->
+                <div class="flex items-center gap-3">
+                    <button id="sound-btn" onclick="toggleAudio()" class="flex items-center gap-2 px-3 py-1.5 rounded bg-stone-900 border border-gold-500/30 text-gold-400 hover:bg-stone-850 transition text-xs font-cinzel">
+                        <i id="sound-icon" class="fa-solid fa-volume-high"></i> Sonido
+                    </button>
+                    <button onclick="resetCrossword()" class="flex items-center gap-2 px-3 py-1.5 rounded bg-stone-900 border border-gold-500/30 text-gold-400 hover:bg-stone-850 transition text-xs font-cinzel">
+                        <i class="fa-solid fa-rotate-right"></i> Reiniciar
+                    </button>
+                </div>
+            </div>
+
+            <!-- Panel Introductorio con estética de relieve -->
+            <div class="bg-stone-900/80 p-4 sm:p-5 rounded border border-gold-500/20 relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-gold-300 to-gold-700"></div>
+                <p class="text-gold-400 font-cinzel font-bold text-xs uppercase tracking-widest mb-1">
+                    LEE CON ATENCIÓN LA CONSIGNA:
+                </p>
+                <p class="text-lg sm:text-xl font-garamond italic text-amber-100/90 font-semibold">
+                    "Leé las pistas, recordá lo aprendido y completá el crucigrama."
+                </p>
+                <p class="text-xs sm:text-sm text-stone-400 font-garamond mt-2 leading-relaxed">
+                    Tema: Los pueblos de América antes de los viajes de exploración y expansión europea: diversidad, desarrollos, estructuras políticas, organización socioeconómica y realizaciones artísticas (Teotihuacán, Tiahuanaco, entre otros).
+                </p>
+            </div>
+        </header>
+
+        <!-- SECCIÓN PRINCIPAL: CRUCIGRAMA + PISTAS -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
+            
+            <!-- COLUMNA IZQUIERDA: EL TABLERO DEL CRUCIGRAMA (7 cols) -->
+            <div class="lg:col-span-7 flex flex-col items-center">
+                <div class="w-full bg-stone-900/90 p-3 sm:p-5 rounded-lg gold-border relative">
+                    
+                    <!-- Indicador de Pista Seleccionada -->
+                    <div id="current-clue-banner" class="mb-4 p-3 bg-stone-950 border border-gold-500/30 rounded text-center min-h-[56px] flex flex-col justify-center items-center">
+                        <span id="banner-number" class="text-xs font-cinzel font-bold text-gold-400 uppercase tracking-wider">
+                            Haz clic en una casilla para comenzar
+                        </span>
+                        <p id="banner-text" class="text-sm sm:text-base font-garamond text-amber-100 italic">
+                            Selecciona una celda o una pista de la lista lateral.
+                        </p>
+                    </div>
+
+                    <!-- Grilla del Crucigrama -->
+                    <div class="overflow-x-auto flex justify-center py-2">
+                        <div id="crossword-grid" class="grid gap-1 bg-stone-950 p-2 sm:p-3 rounded border border-stone-800">
+                            <!-- Las casillas se crean dinámicamente -->
+                        </div>
+                    </div>
+
+                    <!-- Barra de Controles Inferiores -->
+                    <div class="mt-4 pt-3 border-t border-stone-800 flex flex-wrap justify-between items-center gap-3">
+                        <div class="text-xs text-stone-400 font-cinzel">
+                            Progreso: <span id="progress-text" class="text-gold-400 font-bold">0 / 7</span> palabras
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="checkAnswers()" class="px-4 py-2 bg-gradient-to-r from-gold-600 to-gold-700 hover:from-gold-500 hover:to-gold-600 text-stone-950 font-cinzel font-bold text-xs sm:text-sm rounded transition shadow-lg flex items-center gap-2">
+                                <i class="fa-solid fa-check"></i> Comprobar
+                            </button>
+                            <button onclick="revealAll()" class="px-3 py-2 bg-stone-800 hover:bg-stone-700 text-gold-300 border border-gold-500/30 font-cinzel font-bold text-xs rounded transition flex items-center gap-1.5">
+                                <i class="fa-solid fa-eye"></i> Revelar
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- COLUMNA DERECHA: PISTAS HORIZONTALES Y VERTICALES (5 cols) -->
+            <div class="lg:col-span-5 flex flex-col gap-5">
+                
+                <!-- Pistas Horizontales -->
+                <div class="bg-stone-900/90 p-4 rounded-lg gold-border">
+                    <h3 class="font-cinzel font-bold text-gold-400 text-sm sm:text-base tracking-wider uppercase border-b border-gold-500/20 pb-2 mb-3 flex items-center gap-2">
+                        <i class="fa-solid fa-arrows-left-right text-xs"></i> Horizontales
+                    </h3>
+                    <div id="across-clues" class="flex flex-col gap-2 max-h-[220px] overflow-y-auto pr-1">
+                        <!-- Generado por JS -->
+                    </div>
+                </div>
+
+                <!-- Pistas Verticales -->
+                <div class="bg-stone-900/90 p-4 rounded-lg gold-border">
+                    <h3 class="font-cinzel font-bold text-gold-400 text-sm sm:text-base tracking-wider uppercase border-b border-gold-500/20 pb-2 mb-3 flex items-center gap-2">
+                        <i class="fa-solid fa-arrows-up-down text-xs"></i> Verticales
+                    </h3>
+                    <div id="down-clues" class="flex flex-col gap-2 max-h-[260px] overflow-y-auto pr-1">
+                        <!-- Generado por JS -->
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- MODAL DE FELICITACIONES POR VICTORIA -->
+    <div id="win-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300">
+        <div class="bg-stone-900 border-2 border-gold-500 rounded-lg max-w-md w-full p-6 text-center shadow-2xl transform scale-95 transition-transform duration-300 modal-content relative">
+            <div class="text-gold-400 text-5xl mb-3">🏛️</div>
+            <h2 class="font-cinzel font-bold text-2xl text-gold-300 mb-2">¡EXCELENTE TRABAJO!</h2>
+            <p class="font-cinzel text-xs text-gold-400 tracking-widest uppercase mb-4">Crucigrama Histórico Completado</p>
+            
+            <p class="text-stone-300 font-garamond text-lg mb-6 leading-relaxed">
+                Has comprendido y recordado los conceptos clave de las grandes civilizaciones y culturas americanas antes de los viajes de expansión europea.
+            </p>
+
+            <button onclick="closeWinModal()" class="w-full py-3 bg-gradient-to-r from-gold-500 to-gold-700 text-stone-950 font-cinzel font-bold rounded hover:brightness-110 transition shadow-lg">
+                CONTINUAR EXPLORANDO
+            </button>
+        </div>
+    </div>
+
+    <!-- PIE DE PÁGINA MUESTRAL -->
+    <footer class="mt-8 text-center text-xs font-cinzel text-stone-500 border-t border-stone-800/60 pt-4">
+        Crucigrama Interactivo de Historia • Los Pueblos de América
+    </footer>
+
+    <!-- LÓGICA INTERACTIVA JAVASCRIPT -->
+    <script>
+        // --- DEFINICIÓN DE DATOS Y REGLAS DEL CRUCIGRAMA ---
+        const GRID_ROWS = 16;
+        const GRID_COLS = 15;
+
+        // Lista de 7 palabras exactas con sus pistas requeridas
+        const WORDS = [
+            {
+                number: 1,
+                word: "AMERICA",
+                clue: "Continente donde vivían grandes civilizaciones mucho antes de la llegada de los europeos.",
+                direction: "down",
+                startRow: 8,
+                startCol: 2
+            },
+            {
+                number: 2,
+                word: "AGRICULTURA",
+                clue: "Actividad que consiste en preparar la tierra, sembrar y cultivar alimentos.",
+                direction: "across",
+                startRow: 11,
+                startCol: 0
+            },
+            {
+                number: 3,
+                word: "CERAMICA",
+                clue: "Arte de crear objetos, como vasijas y recipientes utilizando arcilla.",
+                direction: "across",
+                startRow: 13,
+                startCol: 5
+            },
+            {
+                number: 4,
+                word: "TEOTIHUACAN",
+                clue: "Antigua y gran ciudad americana conocida por sus pirámides.",
+                direction: "down",
+                startRow: 5,
+                startCol: 5
+            },
+            {
+                number: 5,
+                word: "TIAHUANACO",
+                clue: "Antigua cultura andina que se destacó por sus grandes construcciones de piedra.",
+                direction: "across",
+                startRow: 5,
+                startCol: 5
+            },
+            {
+                number: 6,
+                word: "PESCA",
+                clue: "Actividad que realizaban algunos pueblos para obtener alimentos de ríos y lagos.",
+                direction: "down",
+                startRow: 10,
+                startCol: 11
+            },
+            {
+                number: 7,
+                word: "TITICACA",
+                clue: "Nombre del lago cercano al lugar donde se desarrolló la cultura Tiahuanaco.",
+                direction: "down",
+                startRow: 0,
+                startCol: 10
+            }
+        ];
+
+        // Estado Global
+        let gridData = Array(GRID_ROWS).fill(null).map(() => Array(GRID_COLS).fill(null));
+        let activeWordObj = null;
+        let selectedCell = { r: -1, c: -1 };
+        let soundEnabled = true;
+
+        // --- SINTETIZADOR DE AUDIO WEB ---
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        let audioCtx = null;
+
+        function playSound(type) {
+            if (!soundEnabled) return;
+            try {
+                if (!audioCtx) audioCtx = new AudioCtx();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+
+                const now = audioCtx.currentTime;
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                if (type === 'type') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(320, now);
+                    gain.gain.setValueAtTime(0.05, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+                    osc.start(now);
+                    osc.stop(now + 0.04);
+                } else if (type === 'check') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(523.25, now);
+                    osc.frequency.setValueAtTime(659.25, now + 0.08);
+                    gain.gain.setValueAtTime(0.08, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+                    osc.start(now);
+                    osc.stop(now + 0.2);
+                } else if (type === 'win') {
+                    const notes = [440, 554.37, 659.25, 880];
+                    notes.forEach((freq, idx) => {
+                        const o = audioCtx.createOscillator();
+                        const g = audioCtx.createGain();
+                        o.connect(g);
+                        g.connect(audioCtx.destination);
+                        o.type = 'sine';
+                        o.frequency.setValueAtTime(freq, now + idx * 0.12);
+                        g.gain.setValueAtTime(0.12, now + idx * 0.12);
+                        g.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.12 + 0.3);
+                        o.start(now + idx * 0.12);
+                        o.stop(now + idx * 0.12 + 0.3);
+                    });
+                }
+            } catch (e) {
+                console.log("Audio not supported");
+            }
+        }
+
+        function toggleAudio() {
+            soundEnabled = !soundEnabled;
+            const icon = document.getElementById('sound-icon');
+            icon.className = soundEnabled ? 'fa-solid fa-volume-high' : 'fa-solid fa-volume-xmark';
+        }
+
+        // --- INICIALIZACIÓN Y CONSTRUCCIÓN ---
+        function initCrossword() {
+            // Limpiar datos
+            gridData = Array(GRID_ROWS).fill(null).map(() => Array(GRID_COLS).fill(null));
+
+            // Poblar las celdas válidas a partir de las palabras
+            WORDS.forEach(w => {
+                for (let i = 0; i < w.word.length; i++) {
+                    const r = w.direction === 'across' ? w.startRow : w.startRow + i;
+                    const c = w.direction === 'across' ? w.startCol + i : w.startCol;
+
+                    if (!gridData[r][c]) {
+                        gridData[r][c] = {
+                            char: w.word[i],
+                            userChar: '',
+                            number: (i === 0) ? w.number : null,
+                            words: []
+                        };
+                    } else if (i === 0 && !gridData[r][c].number) {
+                        gridData[r][c].number = w.number;
+                    }
+                    gridData[r][c].words.push(w);
+                }
+            });
+
+            renderGrid();
+            renderClues();
+            updateProgress();
+        }
+
+        function renderGrid() {
+            const container = document.getElementById('crossword-grid');
+            container.style.gridTemplateColumns = `repeat(${GRID_COLS}, minmax(0, 1fr))`;
+            container.innerHTML = '';
+
+            for (let r = 0; r < GRID_ROWS; r++) {
+                for (let c = 0; c < GRID_COLS; c++) {
+                    const cellData = gridData[r][c];
+                    const cellDiv = document.createElement('div');
+
+                    if (!cellData) {
+                        cellDiv.className = 'crossword-cell empty';
+                    } else {
+                        cellDiv.className = 'crossword-cell';
+                        cellDiv.dataset.r = r;
+                        cellDiv.dataset.c = c;
+
+                        if (cellData.number) {
+                            const numSpan = document.createElement('span');
+                            numSpan.className = 'cell-number';
+                            numSpan.textContent = cellData.number;
+                            cellDiv.appendChild(numSpan);
+                        }
+
+                        const input = document.createElement('input');
+                        input.type = 'text';
+                        input.maxLength = 1;
+                        input.className = 'cell-input';
+                        input.value = cellData.userChar;
+
+                        // Manejadores de entrada
+                        input.addEventListener('focus', () => selectCell(r, c));
+                        input.addEventListener('keydown', (e) => handleKeyDown(e, r, c));
+                        input.addEventListener('input', (e) => handleInput(e, r, c));
+
+                        cellDiv.appendChild(input);
+                    }
+                    container.appendChild(cellDiv);
+                }
+            }
+        }
+
+        function renderClues() {
+            const acrossContainer = document.getElementById('across-clues');
+            const downContainer = document.getElementById('down-clues');
+
+            acrossContainer.innerHTML = '';
+            downContainer.innerHTML = '';
+
+            WORDS.forEach(w => {
+                const item = document.createElement('div');
+                item.id = `clue-${w.number}`;
+                item.className = 'clue-item p-2 rounded cursor-pointer text-xs sm:text-sm font-garamond flex gap-2 items-start';
+                item.onclick = () => selectWord(w);
+
+                item.innerHTML = `
+                    <span class="font-cinzel font-bold text-gold-400 bg-stone-950 px-1.5 py-0.5 rounded border border-gold-500/30 text-xs">
+                        ${w.number}
+                    </span>
+                    <span class="text-stone-300">${w.clue}</span>
+                `;
+
+                if (w.direction === 'across') {
+                    acrossContainer.appendChild(item);
+                } else {
+                    downContainer.appendChild(item);
+                }
+            });
+        }
+
+        // --- INTERACCIÓN Y NAVEGACIÓN ---
+        function selectCell(r, c) {
+            const cellData = gridData[r][c];
+            if (!cellData) return;
+
+            selectedCell = { r, c };
+
+            // Elegir qué palabra activar (alternar si la celda pertenece a dos palabras)
+            if (cellData.words.length > 0) {
+                if (activeWordObj && cellData.words.includes(activeWordObj)) {
+                    // Mantener la palabra activa
+                } else {
+                    activeWordObj = cellData.words[0];
+                }
+            }
+
+            highlightGrid();
+        }
+
+        function selectWord(wordObj) {
+            activeWordObj = wordObj;
+            selectedCell = { r: wordObj.startRow, c: wordObj.startCol };
+            highlightGrid();
+
+            // Poner foco en el input
+            const input = getCellInput(selectedCell.r, selectedCell.c);
+            if (input) input.focus();
+        }
+
+        function highlightGrid() {
+            // Limpiar clases de resalte previa
+            document.querySelectorAll('.crossword-cell').forEach(el => {
+                el.classList.remove('selected', 'active-word');
+            });
+            document.querySelectorAll('.clue-item').forEach(el => {
+                el.classList.remove('active');
+            });
+
+            if (!activeWordObj) return;
+
+            // Resaltar celdas de la palabra activa
+            for (let i = 0; i < activeWordObj.word.length; i++) {
+                const r = activeWordObj.direction === 'across' ? activeWordObj.startRow : activeWordObj.startRow + i;
+                const c = activeWordObj.direction === 'across' ? activeWordObj.startCol + i : activeWordObj.startCol;
+
+                const cellElem = document.querySelector(`.crossword-cell[data-r="${r}"][data-c="${c}"]`);
+                if (cellElem) {
+                    cellElem.classList.add('active-word');
+                }
+            }
+
+            // Resaltar celda seleccionada específicamente
+            if (selectedCell.r !== -1) {
+                const selElem = document.querySelector(`.crossword-cell[data-r="${selectedCell.r}"][data-c="${selectedCell.c}"]`);
+                if (selElem) selElem.classList.add('selected');
+            }
+
+            // Actualizar Banner Superior
+            document.getElementById('banner-number').textContent = `${activeWordObj.number}. ${activeWordObj.direction === 'across' ? 'HORIZONTALES' : 'VERTICALES'}`;
+            document.getElementById('banner-text').textContent = activeWordObj.clue;
+
+            // Resaltar pista activa en la lista
+            const clueElem = document.getElementById(`clue-${activeWordObj.number}`);
+            if (clueElem) {
+                clueElem.classList.add('active');
+                clueElem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+        }
+
+        function handleInput(e, r, c) {
+            const val = e.target.value.toUpperCase();
+            e.target.value = val;
+            gridData[r][c].userChar = val;
+
+            playSound('type');
+
+            // Quitar estilos de comprobación al editar
+            const parent = e.target.parentElement;
+            parent.classList.remove('correct', 'incorrect');
+
+            if (val !== '' && activeWordObj) {
+                moveToNextCell(r, c);
+            }
+
+            updateProgress();
+        }
+
+        function handleKeyDown(e, r, c) {
+            if (e.key === 'Backspace') {
+                if (gridData[r][c].userChar === '') {
+                    moveToPrevCell(r, c);
+                } else {
+                    gridData[r][c].userChar = '';
+                    e.target.value = '';
+                }
+                updateProgress();
+            } else if (e.key === 'ArrowRight') {
+                moveSelection(0, 1);
+            } else if (e.key === 'ArrowLeft') {
+                moveSelection(0, -1);
+            } else if (e.key === 'ArrowDown') {
+                moveSelection(1, 0);
+            } else if (e.key === 'ArrowUp') {
+                moveSelection(-1, 0);
+            } else if (e.key === ' ') {
+                // Alternar dirección en intersección
+                const cellData = gridData[r][c];
+                if (cellData && cellData.words.length > 1) {
+                    activeWordObj = (activeWordObj === cellData.words[0]) ? cellData.words[1] : cellData.words[0];
+                    highlightGrid();
+                }
+            }
+        }
+
+        function moveToNextCell(r, c) {
+            if (!activeWordObj) return;
+            const isAcross = activeWordObj.direction === 'across';
+            const nextR = isAcross ? r : r + 1;
+            const nextC = isAcross ? c + 1 : c;
+
+            if (isValidCell(nextR, nextC)) {
+                focusCell(nextR, nextC);
+            }
+        }
+
+        function moveToPrevCell(r, c) {
+            if (!activeWordObj) return;
+            const isAcross = activeWordObj.direction === 'across';
+            const prevR = isAcross ? r : r - 1;
+            const prevC = isAcross ? c - 1 : c;
+
+            if (isValidCell(prevR, prevC)) {
+                focusCell(prevR, prevC);
+            }
+        }
+
+        function moveSelection(dr, dc) {
+            const newR = selectedCell.r + dr;
+            const newC = selectedCell.c + dc;
+            if (isValidCell(newR, newC)) {
+                focusCell(newR, newC);
+            }
+        }
+
+        function isValidCell(r, c) {
+            return r >= 0 && r < GRID_ROWS && c >= 0 && c < GRID_COLS && gridData[r][c] !== null;
+        }
+
+        function focusCell(r, c) {
+            selectCell(r, c);
+            const input = getCellInput(r, c);
+            if (input) input.focus();
+        }
+
+        function getCellInput(r, c) {
+            const cellElem = document.querySelector(`.crossword-cell[data-r="${r}"][data-c="${c}"]`);
+            return cellElem ? cellElem.querySelector('input') : null;
+        }
+
+        // --- COMPROBACIÓN Y ESTADO DE VICTORIA ---
+        function checkAnswers() {
+            playSound('check');
+            let completedWords = 0;
+
+            WORDS.forEach(w => {
+                let isWordCorrect = true;
+
+                for (let i = 0; i < w.word.length; i++) {
+                    const r = w.direction === 'across' ? w.startRow : w.startRow + i;
+                    const c = w.direction === 'across' ? w.startCol + i : w.startCol;
+                    const cellElem = document.querySelector(`.crossword-cell[data-r="${r}"][data-c="${c}"]`);
+
+                    if (gridData[r][c].userChar === w.word[i]) {
+                        if (cellElem) cellElem.classList.add('correct');
+                    } else {
+                        isWordCorrect = false;
+                        if (gridData[r][c].userChar !== '' && cellElem) {
+                            cellElem.classList.add('incorrect');
+                        }
+                    }
+                }
+
+                const clueElem = document.getElementById(`clue-${w.number}`);
+                if (isWordCorrect) {
+                    completedWords++;
+                    if (clueElem) clueElem.classList.add('completed');
+                } else {
+                    if (clueElem) clueElem.classList.remove('completed');
+                }
+            });
+
+            updateProgress();
+
+            if (completedWords === WORDS.length) {
+                showWinModal();
+            }
+        }
+
+        function updateProgress() {
+            let correctWordsCount = 0;
+
+            WORDS.forEach(w => {
+                let match = true;
+                for (let i = 0; i < w.word.length; i++) {
+                    const r = w.direction === 'across' ? w.startRow : w.startRow + i;
+                    const c = w.direction === 'across' ? w.startCol + i : w.startCol;
+                    if (gridData[r][c].userChar !== w.word[i]) {
+                        match = false;
+                        break;
+                    }
+                }
+                if (match) correctWordsCount++;
+            });
+
+            document.getElementById('progress-text').textContent = `${correctWordsCount} / ${WORDS.length}`;
+        }
+
+        function revealAll() {
+            WORDS.forEach(w => {
+                for (let i = 0; i < w.word.length; i++) {
+                    const r = w.direction === 'across' ? w.startRow : w.startRow + i;
+                    const c = w.direction === 'across' ? w.startCol + i : w.startCol;
+                    gridData[r][c].userChar = w.word[i];
+
+                    const input = getCellInput(r, c);
+                    if (input) input.value = w.word[i];
+                }
+            });
+            checkAnswers();
+        }
+
+        function resetCrossword() {
+            for (let r = 0; r < GRID_ROWS; r++) {
+                for (let c = 0; c < GRID_COLS; c++) {
+                    if (gridData[r][c]) {
+                        gridData[r][c].userChar = '';
+                    }
+                }
+            }
+            renderGrid();
+            document.querySelectorAll('.clue-item').forEach(el => el.classList.remove('completed', 'active'));
+            document.getElementById('banner-number').textContent = "Haz clic en una casilla para comenzar";
+            document.getElementById('banner-text').textContent = "Selecciona una celda o una pista de la lista lateral.";
+            updateProgress();
+        }
+
+        function showWinModal() {
+            playSound('win');
+            const modal = document.getElementById('win-modal');
+            const content = modal.querySelector('.modal-content');
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+            content.classList.remove('scale-95');
+            content.classList.add('scale-100');
+
+            // Lanzar confeti dorado
+            confetti({
+                particleCount: 80,
+                spread: 70,
+                origin: { y: 0.6 },
+                colors: ['#d4af37', '#fcd34d', '#ffffff', '#8c6239']
+            });
+        }
+
+        function closeWinModal() {
+            const modal = document.getElementById('win-modal');
+            const content = modal.querySelector('.modal-content');
+            modal.classList.add('opacity-0', 'pointer-events-none');
+            content.classList.remove('scale-100');
+            content.classList.add('scale-95');
+        }
+
+        // Cargar crucigrama
+        window.onload = initCrossword;
+    </script>
+</body>
+</html>
